@@ -1,4 +1,4 @@
-import streamlit as st
+wimport streamlit as st
 import ccxt
 import pandas as pd
 import plotly.graph_objects as go
@@ -29,7 +29,7 @@ PERIOD_MINUTES = {
 
 @st.cache_data(ttl=60)
 def fetch_all_ohlcv(symbol, timeframe, total_limit):
-    exchange = ccxt.binance()
+    exchange = ccxt.okk()
     per_call = 1000
     all_bars = []
     since = exchange.milliseconds() - total_limit * 60 * 1000
