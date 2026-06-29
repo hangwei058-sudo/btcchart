@@ -29,7 +29,7 @@ PERIOD_MINUTES = {
 
 @st.cache_data(ttl=60)
 def fetch_all_ohlcv(symbol, timeframe, total_limit):
-    exchange = ccxt.okk()
+    exchange = ccxt.okx()
     per_call = 1000
     all_bars = []
     since = exchange.milliseconds() - total_limit * 60 * 1000
