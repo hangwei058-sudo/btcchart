@@ -2,5 +2,3 @@ streamlit
 ccxt
 pandas
 numpy
-plotly
-streamlit-lightweight-charts-ntf
