@@ -3,4 +3,4 @@ ccxt
 pandas
 numpy
 plotly
-streamlit-lightweight-charts
+streamlit-lightweight-charts-ntf
