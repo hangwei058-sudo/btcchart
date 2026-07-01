@@ -233,24 +233,27 @@ seriesStoch = [
 
 # --- 在 seriesStoch 列表定义结束的 ] 之后，粘贴下方代码 ---
 
-# --- 渲染逻辑开始：请替换文件底部所有旧的渲染代码 ---
+# --- 统一渲染配置（请直接替换文件末尾） ---
 
-# 1. 定义统一的联动和虚线配置
-shared_chart_config = {
-    "sync": True,
+# 1. 强制统一的 group 配置，移除 sync: True
+shared_config = {
     "group": "my_charts",
     "crosshair": {
         "mode": 1,
         "vertLine": {"visible": True, "style": 2, "width": 1, "color": "#999999"},
         "horzLine": {"visible": True, "style": 2, "width": 1, "color": "#999999"}
+    },
+    "timeScale": {
+        "timeVisible": True,
+        "secondsVisible": False
     }
 }
 
-# 2. 合并配置并渲染
+# 2. 确保渲染调用简洁，只传递 group
+# 这种写法是 multipane 模式下最稳定的
 renderLightweightCharts([
-    {"chart": {**chartOptions, **shared_chart_config}, "series": seriesCandle},
-    {"chart": {**macdChartOptions, **shared_chart_config}, "series": seriesMacd},
-    {"chart": {**stochChartOptions, **shared_chart_config}, "series": seriesStoch},
+    {"chart": {**chartOptions, **shared_config}, "series": seriesCandle},
+    {"chart": {**macdChartOptions, **shared_config}, "series": seriesMacd},
+    {"chart": {**stochChartOptions, **shared_config}, "series": seriesStoch},
 ], 'multipane')
 
-# --- 渲染逻辑结束 ---
