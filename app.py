@@ -214,6 +214,21 @@ seriesStoch = [
         "color": "orange", "lineWidth": 1,
         "lastValueVisible": False, "priceLineVisible": False
     }},
+    # 80 虚线
+    {"type": 'Line', "data": [{"time": stoch_k_line[0]["time"], "value": 80},
+                               {"time": stoch_k_line[-1]["time"], "value": 80}],
+     "options": {"color": "#888888", "lineWidth": 1, "lineStyle": 2,
+                 "lastValueVisible": False, "priceLineVisible": False}},
+    # 50 虚线
+    {"type": 'Line', "data": [{"time": stoch_k_line[0]["time"], "value": 50},
+                               {"time": stoch_k_line[-1]["time"], "value": 50}],
+     "options": {"color": "#888888", "lineWidth": 1, "lineStyle": 2,
+                 "lastValueVisible": False, "priceLineVisible": False}},
+    # 20 虚线
+    {"type": 'Line', "data": [{"time": stoch_k_line[0]["time"], "value": 20},
+                               {"time": stoch_k_line[-1]["time"], "value": 20}],
+     "options": {"color": "#888888", "lineWidth": 1, "lineStyle": 2,
+                 "lastValueVisible": False, "priceLineVisible": False}},
 ]
 
 renderLightweightCharts([
