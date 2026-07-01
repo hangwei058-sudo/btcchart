@@ -2,7 +2,7 @@ import streamlit as st
 import ccxt
 import pandas as pd
 import time
-from streamlit_lightweight_charts import renderLightweightCharts
+from streamlit_lightweight_charts_ntf import renderLightweightCharts
 
 st.set_page_config(layout="wide")
 
@@ -13,13 +13,12 @@ SYMBOL_CONFIG = {
 
 TIME_CONFIG = {
     "5m": "5min", "7m": "7min", "10m": "10min", "15m": "15min", "20m": "20min",
-    "23m": "23min", "30m": "30min", "45m": "45min", "1h": "1h", "90m": "90min",
-    "2h": "2h", "3h": "3h", "4h": "4h", "5h": "5h", "6h": "6h", "7h": "7h",
+    "23m": "23min",
+    "30m": "30min", "45m": "45min", "1h": "1h", "90m": "90min", "2h": "2h",
+    "3h": "3h", "4h": "4h", "5h": "5h", "6h": "6h", "7h": "7h",
     "8h": "8h", "10h": "10h", "12h": "12h", "1d": "1d", "2d": "2d",
     "3d": "3d", "4d": "4d", "5d": "5d", "10d": "10d"
 }
-
-period_keys = list(TIME_CONFIG.keys())
 
 st.sidebar.title("品种选择")
 selected_symbol_label = st.sidebar.selectbox("品种:", list(SYMBOL_CONFIG.keys()), index=0)
@@ -28,32 +27,16 @@ symbol = SYMBOL_CONFIG[selected_symbol_label]
 if "selected_label" not in st.session_state:
     st.session_state.selected_label = "15m"
 
-# ◀ 当前周期 ▶ 循环按钮
-c1, c2, c3 = st.columns([1, 2, 1])
-with c1:
-    if st.button("◀ 上一个", use_container_width=True):
-        idx = period_keys.index(st.session_state.selected_label)
-        st.session_state.selected_label = period_keys[(idx - 1) % len(period_keys)]
-with c2:
-    st.markdown(
-        f"<div style='text-align:center;font-size:20px;font-weight:bold;padding:6px'>"
-        f"{st.session_state.selected_label}</div>",
-        unsafe_allow_html=True
-    )
-with c3:
-    if st.button("下一个 ▶", use_container_width=True):
-        idx = period_keys.index(st.session_state.selected_label)
-        st.session_state.selected_label = period_keys[(idx + 1) % len(period_keys)]
-
-# 紧凑小按钮网格（8列）
-n_cols = 8
+st.write("时间级别：")
+period_keys = list(TIME_CONFIG.keys())
+n_cols = 7
 for row_start in range(0, len(period_keys), n_cols):
     row_keys = period_keys[row_start:row_start + n_cols]
     cols = st.columns(n_cols)
     for i, key in enumerate(row_keys):
         is_active = (key == st.session_state.selected_label)
-        label = f"[{key}]" if is_active else key
-        if cols[i].button(label, key=f"btn_{key}"):
+        label = f"●{key}" if is_active else key
+        if cols[i].button(label, key=f"btn_{key}", use_container_width=True):
             st.session_state.selected_label = key
 
 selected_label = st.session_state.selected_label
@@ -68,6 +51,7 @@ def fetch_all_ohlcv(symbol, timeframe, total_limit):
     all_bars = []
     since = exchange.milliseconds() - total_limit * 60 * 1000
     now = exchange.milliseconds()
+
     while since < now:
         bars = exchange.fetch_ohlcv(symbol, timeframe=timeframe, since=since, limit=per_call)
         if not bars:
@@ -79,6 +63,7 @@ def fetch_all_ohlcv(symbol, timeframe, total_limit):
         since = last_ts + 60 * 1000
         if len(all_bars) >= total_limit:
             break
+
     return all_bars
 
 @st.cache_data(ttl=120)
@@ -97,14 +82,17 @@ def resample_data(symbol, rule):
         {'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last', 'volume': 'sum'}
     ).dropna(subset=['open', 'high', 'low', 'close'])
 
+    # MACD
     ema12 = resampled['close'].ewm(span=12, adjust=False).mean()
     ema26 = resampled['close'].ewm(span=26, adjust=False).mean()
     resampled['macd'] = ema12 - ema26
     resampled['macd_s'] = resampled['macd'].ewm(span=9, adjust=False).mean()
     resampled['macd_h'] = resampled['macd'] - resampled['macd_s']
 
+    # EMA52
     resampled['ema52'] = resampled['close'].ewm(span=52, adjust=False).mean()
 
+    # 标准 Stochastic（KD）：%K长度=5, %K平滑=3, %D平滑=3
     k_length, k_smooth, d_smooth = 5, 3, 3
     low_min = resampled['low'].rolling(k_length).min()
     high_max = resampled['high'].rolling(k_length).max()
@@ -118,9 +106,11 @@ df = resample_data(symbol, rule)
 st.write(f"{selected_symbol_label} | 共加载 {len(df)} 条 {selected_label} K线")
 
 candles = [
-    {"time": int(idx.timestamp()),
-     "open": float(row['open']), "high": float(row['high']),
-     "low": float(row['low']), "close": float(row['close'])}
+    {
+        "time": int(idx.timestamp()),
+        "open": float(row['open']), "high": float(row['high']),
+        "low": float(row['low']), "close": float(row['close'])
+    }
     for idx, row in df.iterrows()
 ]
 
@@ -215,36 +205,71 @@ seriesMacd = [
     }},
 ]
 
-# Stoch：用 priceLines 画永久水平虚线，贯穿全图不受缩放影响
 seriesStoch = [
-    {
-        "type": 'Line',
-        "data": stoch_k_line,
-        "options": {
-            "color": "blue", "lineWidth": 1,
-            "lastValueVisible": False, "priceLineVisible": False,
-            "priceLines": [
-                {"price": 80, "color": "#888888", "lineWidth": 1,
-                 "lineStyle": 2, "axisLabelVisible": True, "title": ""},
-                {"price": 50, "color": "#888888", "lineWidth": 1,
-                 "lineStyle": 2, "axisLabelVisible": True, "title": ""},
-                {"price": 20, "color": "#888888", "lineWidth": 1,
-                 "lineStyle": 2, "axisLabelVisible": True, "title": ""},
-            ]
-        }
-    },
-    {
-        "type": 'Line',
-        "data": stoch_d_line,
-        "options": {
-            "color": "orange", "lineWidth": 1,
-            "lastValueVisible": False, "priceLineVisible": False
-        }
-    },
+    {"type": 'Line', "data": stoch_k_line, "options": {
+        "color": "blue", "lineWidth": 1,
+        "lastValueVisible": False, "priceLineVisible": False
+    }},
+    {"type": 'Line', "data": stoch_d_line, "options": {
+        "color": "orange", "lineWidth": 1,
+        "lastValueVisible": False, "priceLineVisible": False
+    }},
+    # 80 虚线
+    {"type": 'Line', "data": [{"time": stoch_k_line[0]["time"], "value": 80},
+                               {"time": stoch_k_line[-1]["time"], "value": 80}],
+     "options": {"color": "#888888", "lineWidth": 1, "lineStyle": 2,
+                 "lastValueVisible": False, "priceLineVisible": False}},
+    # 50 虚线
+    {"type": 'Line', "data": [{"time": stoch_k_line[0]["time"], "value": 50},
+                               {"time": stoch_k_line[-1]["time"], "value": 50}],
+     "options": {"color": "#888888", "lineWidth": 1, "lineStyle": 2,
+                 "lastValueVisible": False, "priceLineVisible": False}},
+    # 20 虚线
+    {"type": 'Line', "data": [{"time": stoch_k_line[0]["time"], "value": 20},
+                               {"time": stoch_k_line[-1]["time"], "value": 20}],
+     "options": {"color": "#888888", "lineWidth": 1, "lineStyle": 2,
+                 "lastValueVisible": False, "priceLineVisible": False}},
 ]
 
+# 不直接在函数参数里传 sync，而是将 group 信息内嵌到 chartOptions 中
+# 并移除 renderLightweightCharts 调用的 sync 和 group 参数
+# 尝试此版本：
+
+# 定义统一的跨面板联动配置
+crosshair_options = {
+    "mode": 1,  # 1 对应 Magnet 模式，或者设为 0 对应 Normal
+    "vertLine": {
+        "visible": True,
+        "labelVisible": True,
+        "style": 2, # 2 对应虚线
+        "width": 1,
+        "color": "#999999",
+    },
+    "horzLine": {
+        "visible": True,
+        "labelVisible": True,
+        "style": 2,
+        "width": 1,
+        "color": "#999999",
+    }
+}
+
+# 1. 定义统一的联动和十字线配置
+# 注意：vertLine 必须 visible: True 才能看到贯穿全图的线
+shared_chart_config = {
+    "sync": True,
+    "group": "my_charts",
+    "crosshair": {
+        "mode": 1,
+        "vertLine": {"visible": True, "style": 2, "width": 1, "color": "#999999"},
+        "horzLine": {"visible": True, "style": 2, "width": 1, "color": "#999999"}
+    }
+}
+
+# 2. 将配置合并进原来的字典 (使用 {**dict1, **dict2} 语法)
+# 这一步直接覆盖旧的配置，确保联动参数被传入
 renderLightweightCharts([
-    {"chart": chartOptions, "series": seriesCandle},
-    {"chart": macdChartOptions, "series": seriesMacd},
-    {"chart": stochChartOptions, "series": seriesStoch},
+    {"chart": {**chartOptions, **shared_chart_config}, "series": seriesCandle},
+    {"chart": {**macdChartOptions, **shared_chart_config}, "series": seriesMacd},
+    {"chart": {**stochChartOptions, **shared_chart_config}, "series": seriesStoch},
 ], 'multipane')
