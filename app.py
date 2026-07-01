@@ -231,45 +231,24 @@ seriesStoch = [
                  "lastValueVisible": False, "priceLineVisible": False}},
 ]
 
-# 不直接在函数参数里传 sync，而是将 group 信息内嵌到 chartOptions 中
-# 并移除 renderLightweightCharts 调用的 sync 和 group 参数
-# 尝试此版本：
+# --- 在 seriesStoch 列表定义结束的 ] 之后，粘贴下方代码 ---
 
-# 定义统一的跨面板联动配置
-crosshair_options = {
-    "mode": 1,  # 1 对应 Magnet 模式，或者设为 0 对应 Normal
-    "vertLine": {
-        "visible": True,
-        "labelVisible": True,
-        "style": 2, # 2 对应虚线
-        "width": 1,
-        "color": "#999999",
-    },
-    "horzLine": {
-        "visible": True,
-        "labelVisible": True,
-        "style": 2,
-        "width": 1,
-        "color": "#999999",
-    }
-}
-
-# 1. 定义统一的联动和十字线配置
-# 注意：vertLine 必须 visible: True 才能看到贯穿全图的线
-shared_chart_config = {
+# 定义统一的跨面板联动配置（这是核心，必须放在调用前）
+shared_config = {
     "sync": True,
     "group": "my_charts",
     "crosshair": {
-        "mode": 1,
+        "mode": 1, 
         "vertLine": {"visible": True, "style": 2, "width": 1, "color": "#999999"},
         "horzLine": {"visible": True, "style": 2, "width": 1, "color": "#999999"}
     }
 }
 
-# 2. 将配置合并进原来的字典 (使用 {**dict1, **dict2} 语法)
-# 这一步直接覆盖旧的配置，确保联动参数被传入
+# 使用 {**dict1, **dict2} 语法合并配置
+# 关键点：renderLightweightCharts 的括号内参数只有列表和模式，不要加任何其他参数
 renderLightweightCharts([
-    {"chart": {**chartOptions, **shared_chart_config}, "series": seriesCandle},
-    {"chart": {**macdChartOptions, **shared_chart_config}, "series": seriesMacd},
-    {"chart": {**stochChartOptions, **shared_chart_config}, "series": seriesStoch},
+    {"chart": {**chartOptions, **shared_config}, "series": seriesCandle},
+    {"chart": {**macdChartOptions, **shared_config}, "series": seriesMacd},
+    {"chart": {**stochChartOptions, **shared_config}, "series": seriesStoch},
 ], 'multipane')
+
