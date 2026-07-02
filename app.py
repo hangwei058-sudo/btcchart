@@ -180,7 +180,7 @@ const w = window.innerWidth;
 const h = window.innerHeight;
 
 const chart1 = LightweightCharts.createChart(document.getElementById('chart1'), {{
-  width: w, height: Math.floor(h * 0.52),
+  width: w, height: Math.floor(h * 0.42),
   layout: commonLayout, grid: commonGrid, timeScale: commonTimeScale,
   crosshair: {{ mode: LightweightCharts.CrosshairMode.Normal }},
   rightPriceScale: {{ borderColor: '#333' }},
@@ -198,7 +198,7 @@ const ema52Series = chart1.addLineSeries({{
 ema52Series.setData(data.ema52);
 
 const chart2 = LightweightCharts.createChart(document.getElementById('chart2'), {{
-  width: w, height: Math.floor(h * 0.25),
+  width: w, height: Math.floor(h * 0.20),
   layout: commonLayout, grid: commonGrid, timeScale: commonTimeScale,
   crosshair: {{ mode: LightweightCharts.CrosshairMode.Normal }},
   rightPriceScale: {{ borderColor: '#333' }},
@@ -219,7 +219,7 @@ const signalSeries = chart2.addLineSeries({{
 signalSeries.setData(data.signal);
 
 const chart3 = LightweightCharts.createChart(document.getElementById('chart3'), {{
-  width: w, height: Math.floor(h * 0.18),
+  width: w, height: Math.floor(h * 0.15),
   layout: commonLayout, grid: commonGrid, timeScale: commonTimeScale,
   crosshair: {{ mode: LightweightCharts.CrosshairMode.Normal }},
   rightPriceScale: {{ borderColor: '#333' }},
@@ -292,4 +292,4 @@ window.addEventListener('resize', () => {{
 </html>
 """
 
-st.components.v1.html(html, height=950, scrolling=False)
+st.components.v1.html(html, height=850, scrolling=False)
